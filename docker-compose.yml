@@ -1,0 +1,112 @@
+version: '3.9'
+
+services:
+
+  # ============================================
+  # PETE — Perplexity MCP Bridge
+  # ============================================
+  pete-bridge:
+    image: node:20-alpine
+    container_name: pete-bridge
+    working_dir: /app
+    volumes:
+      - ./services/pete:/app
+    environment:
+      - PETE_PERPLEXITY_API_KEY=${PETE_PERPLEXITY_API_KEY}
+      - PETE_BRIDGE_TOKEN=${PETE_BRIDGE_TOKEN}
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+    networks:
+      - mor-net
+
+  # ============================================
+  # NOTION MCP
+  # ============================================
+  notion-mcp:
+    image: node:20-alpine
+    container_name: notion-mcp
+    working_dir: /app
+    volumes:
+      - ./services/notion:/app
+    command: ["npx", "-y", "@notionhq/notion-mcp-server"]
+    environment:
+      - OPENAPI_MCP_HEADERS={"Authorization":"Bearer ${NOTION_INTEGRATION_TOKEN}","Notion-Version":"2022-06-28"}
+    ports:
+      - "3002:3002"
+    restart: unless-stopped
+    networks:
+      - mor-net
+
+  # ============================================
+  # GITHUB MCP
+  # ============================================
+  github-mcp:
+    image: node:20-alpine
+    container_name: github-mcp
+    working_dir: /app
+    command: ["npx", "-y", "@modelcontextprotocol/server-github"]
+    environment:
+      - GITHUB_PERSONAL_ACCESS_TOKEN=${GITHUB_PERSONAL_ACCESS_TOKEN}
+    ports:
+      - "3003:3003"
+    restart: unless-stopped
+    networks:
+      - mor-net
+
+  # ============================================
+  # JACKSON — TradingView MCP
+  # ============================================
+  jackson-tv-mcp:
+    image: node:20-alpine
+    container_name: jackson-tv-mcp
+    working_dir: /app
+    volumes:
+      - ./services/jackson:/app
+    environment:
+      - TV_MCP_HOST=${TV_MCP_HOST}
+      - TV_MCP_PORT=${TV_MCP_PORT}
+      - JACKSON_BRIDGE_URL=${JACKSON_BRIDGE_URL}
+    ports:
+      - "8765:8765"
+    restart: unless-stopped
+    networks:
+      - mor-net
+    # NOTE: Requires Jackson MOR MSIX activation on Windows host
+    # See: docs/jackson-setup.md
+
+  # ============================================
+  # mcp-optionsflow (PENDING INSTALL)
+  # ============================================
+  # optionsflow-mcp:
+  #   image: node:20-alpine
+  #   container_name: optionsflow-mcp
+  #   environment:
+  #     - OPTIONSFLOW_API_KEY=${OPTIONSFLOW_API_KEY}
+  #   ports:
+  #     - "3004:3004"
+  #   networks:
+  #     - mor-net
+  #   # Uncomment when mcp-optionsflow is installed (see GH Issue #2)
+
+  # ============================================
+  # OPENCLAW BRIDGE (PENDING)
+  # ============================================
+  # openclaw:
+  #   image: node:20-alpine
+  #   container_name: openclaw-bridge
+  #   environment:
+  #     - OPENCLAW_SECRET=${OPENCLAW_SECRET}
+  #   ports:
+  #     - "9000:9000"
+  #   networks:
+  #     - mor-net
+  #   # Uncomment when OpenClaw is installed (see GH Issue #5)
+
+networks:
+  mor-net:
+    driver: bridge
+
+volumes:
+  pete-data:
+  notion-data:
